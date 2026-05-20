@@ -1,4 +1,5 @@
 import { GameCommand } from "./types";
+import { CharacterClass } from "./characters";
 import { createHeroAPI } from "./api/HeroAPI";
 
 export interface RunResult {
@@ -6,25 +7,22 @@ export interface RunResult {
   error: string | null;
 }
 
-/**
- * Executes user-submitted code in a sandboxed scope.
- * The only global available is `hero`.
- * Returns the collected commands (no DOM/network access).
- */
-export function runUserCode(code: string): RunResult {
+const BLOCKED_GLOBALS = [
+  "window", "document", "fetch", "XMLHttpRequest",
+  "eval", "Function", "import", "require",
+  "process", "global", "globalThis", "__proto__",
+  "localStorage", "sessionStorage", "indexedDB",
+];
+
+export function runUserCode(
+  code: string,
+  characterClass: CharacterClass = "warrior"
+): RunResult {
   const commands: GameCommand[] = [];
-  const hero = createHeroAPI(commands);
+  const hero = createHeroAPI(commands, characterClass);
 
   try {
-    // Sanitize: block obvious escapes
-    const blocked = [
-      "window", "document", "fetch", "XMLHttpRequest",
-      "eval", "Function", "import", "require",
-      "process", "global", "globalThis", "__proto__",
-      "localStorage", "sessionStorage", "indexedDB",
-    ];
-
-    for (const word of blocked) {
+    for (const word of BLOCKED_GLOBALS) {
       if (new RegExp(`\\b${word}\\b`).test(code)) {
         return {
           commands: [],
@@ -33,7 +31,6 @@ export function runUserCode(code: string): RunResult {
       }
     }
 
-    // Wrap in an IIFE to limit scope
     const fn = new Function("hero", `"use strict";\n${code}`);
     fn(hero);
 

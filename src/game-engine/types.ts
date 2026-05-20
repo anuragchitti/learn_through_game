@@ -6,6 +6,7 @@ export type TileType =
   | "hero"
   | "enemy"
   | "key"
+  | "barrier"
   | "chest"
   | "spike"
   | "bush";
@@ -30,7 +31,12 @@ export interface GameCommand {
     | "WAIT"
     | "SAY"
     | "TURN"
-    | "SHOOT";
+    | "SHOOT"
+    | "BLINK"
+    | "FIREBALL"
+    | "DASH"
+    | "CHARGE"
+    | "SHIELD";
   direction?: Direction;
   message?: string;
 }
@@ -58,6 +64,7 @@ export interface LevelDefinition {
   maxCommands?: number;
   hint: string;
   tip?: string;
+  requiredClass?: import("./characters").CharacterClass;
 }
 
 export interface WorldState {

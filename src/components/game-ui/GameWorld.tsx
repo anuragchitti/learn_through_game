@@ -1,12 +1,14 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import { WorldState } from "@/game-engine/types";
+import { CharacterClass, HERO_AVATAR } from "@/game-engine/characters";
 import { useEffect, useState } from "react";
 
 interface Props {
   state: WorldState;
   prevState?: WorldState;
   isAnimating: boolean;
+  characterClass?: CharacterClass;
 }
 
 // Tile visual config
@@ -43,7 +45,7 @@ const HERO_DIRECTION_EMOJI: Record<string, string> = {
   down:  "🦸",
 };
 
-export default function GameWorld({ state, prevState, isAnimating }: Props) {
+export default function GameWorld({ state, prevState, isAnimating, characterClass = "warrior" }: Props) {
   const [collectedCells, setCollectedCells] = useState<Set<string>>(new Set());
   const [shakeDead, setShakeDead] = useState(false);
 
@@ -167,7 +169,7 @@ export default function GameWorld({ state, prevState, isAnimating }: Props) {
                       transition={{ duration: 0.2 }}
                     >
                       <span className="text-xl sm:text-2xl select-none drop-shadow-lg">
-                        {state.isAlive ? "🦸" : "💀"}
+                        {state.isAlive ? HERO_AVATAR[characterClass] : "💀"}
                       </span>
                       {/* Hero glow ring */}
                       {state.isAlive && (

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { getLevelsForCourse, getLevel, getNextLevel } from "@/game-engine/levels";
 import { runUserCode } from "@/game-engine/CodeRunner";
+import { CharacterClass, HERO_AVATAR, getCharacter } from "@/game-engine/characters";
 import { runCommands, buildInitialState, checkObjectives } from "@/game-engine/WorldEngine";
 import { WorldState, LevelDefinition, GameResult } from "@/game-engine/types";
 import GameWorld from "@/components/game-ui/GameWorld";
@@ -38,8 +39,14 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
   const [result, setResult] = useState<GameResult | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
+  const [characterClass, setCharacterClass] = useState<CharacterClass>("warrior");
 
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem("ltg_character") as CharacterClass | null;
+    if (saved) setCharacterClass(saved);
+  }, []);
 
   useEffect(() => {
     if (levelDef) {
@@ -67,7 +74,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     setIsAnimating(false);
     if (animRef.current) clearTimeout(animRef.current);
 
-    const { commands, error } = runUserCode(code);
+    const { commands, error } = runUserCode(code, characterClass);
     if (error) {
       setCodeError(error);
       return;
@@ -127,7 +134,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     }
 
     animRef.current = setTimeout(step, 350);
-  }, [code, levelDef]);
+  }, [code, levelDef, characterClass]);
 
   if (!levelDef || !course) {
     return (
@@ -161,6 +168,11 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {/* Character avatar chip */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-white/50">
+            <span>{HERO_AVATAR[characterClass]}</span>
+            <span className="capitalize hidden sm:inline">{characterClass}</span>
+          </div>
           {/* Level nav */}
           {levelNumber > 1 && (
             <button
@@ -282,7 +294,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
         <div className="flex flex-col gap-4 p-4 overflow-y-auto">
           {/* Game world */}
           <div className="flex items-center justify-center p-4 rounded-2xl bg-gray-900/60 border border-white/10">
-            <GameWorld state={currentState} prevState={prevWorldState ?? undefined} isAnimating={isAnimating} />
+            <GameWorld state={currentState} prevState={prevWorldState ?? undefined} isAnimating={isAnimating} characterClass={characterClass} />
           </div>
 
           {/* Objectives */}

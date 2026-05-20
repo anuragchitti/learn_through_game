@@ -1,8 +1,8 @@
 import { getCourseBySlug, courses } from "@/data/courses";
-import { getLevelsForCourse } from "@/game-engine/levels";
+import { getLevelsForCourse, warriorLevels, mageLevels, archerLevels } from "@/game-engine/levels";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Clock, BookOpen, Trophy, Play, ChevronRight, Lock } from "lucide-react";
+import { Clock, BookOpen, Trophy, Play, ChevronRight, Lock, Sword } from "lucide-react";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -100,6 +100,43 @@ export default async function CourseDetailPage({ params }: Props) {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Class-specific challenge levels */}
+        {hasLevels && (
+          <div className="mt-10">
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+              <Sword size={18} className="text-indigo-400" />
+              Class Challenge Levels
+            </h2>
+            <p className="text-white/40 text-sm mb-5">Unique levels unlocked based on your character class.</p>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {[
+                { label: "Warrior", emoji: "🗡️", color: "text-orange-400", border: "border-orange-500/30 hover:border-orange-400/60", bg: "bg-orange-500/5", levels: warriorLevels },
+                { label: "Mage",    emoji: "🔮", color: "text-violet-400", border: "border-violet-500/30 hover:border-violet-400/60", bg: "bg-violet-500/5", levels: mageLevels },
+                { label: "Archer",  emoji: "🏹", color: "text-green-400",  border: "border-green-500/30 hover:border-green-400/60",  bg: "bg-green-500/5",  levels: archerLevels },
+              ].map(({ label, emoji, color, border, bg, levels: classLvls }) => (
+                <div key={label} className={`p-4 rounded-2xl border ${border} ${bg} transition-colors`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">{emoji}</span>
+                    <span className={`font-bold ${color}`}>{label}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {classLvls.map((lvl) => (
+                      <Link
+                        key={lvl.id}
+                        href={`/play/${slug}/${lvl.number}`}
+                        className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors"
+                      >
+                        <ChevronRight size={12} className="shrink-0 opacity-40" />
+                        <span className="truncate">{lvl.title.replace(/^(Warrior|Mage|Archer): /, "")}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
