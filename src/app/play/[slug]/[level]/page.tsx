@@ -30,6 +30,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
 
   const [code, setCode] = useState(levelDef?.starterCode ?? "");
   const [worldState, setWorldState] = useState<WorldState | null>(null);
+  const [prevWorldState, setPrevWorldState] = useState<WorldState | null>(null);
   const [snapshots, setSnapshots] = useState<WorldState[]>([]);
   const [snapshotIndex, setSnapshotIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -75,6 +76,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     const allSnapshots = runCommands(levelDef, commands);
     setSnapshots(allSnapshots);
     setSnapshotIndex(0);
+    setPrevWorldState(null);
     setWorldState(allSnapshots[0]);
 
     // Animate through snapshots
@@ -85,6 +87,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
       i++;
       if (i < allSnapshots.length) {
         setSnapshotIndex(i);
+        setPrevWorldState(allSnapshots[i - 1] ?? null);
         setWorldState(allSnapshots[i]);
         animRef.current = setTimeout(step, 350);
       } else {
@@ -279,7 +282,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
         <div className="flex flex-col gap-4 p-4 overflow-y-auto">
           {/* Game world */}
           <div className="flex items-center justify-center p-4 rounded-2xl bg-gray-900/60 border border-white/10">
-            <GameWorld state={currentState} isAnimating={isAnimating} />
+            <GameWorld state={currentState} prevState={prevWorldState ?? undefined} isAnimating={isAnimating} />
           </div>
 
           {/* Objectives */}

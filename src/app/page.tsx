@@ -45,9 +45,11 @@ export default function HomePage() {
     <div className="min-h-screen">
       {/* Hero */}
       <section className="relative overflow-hidden py-24 px-4 sm:px-6">
-        {/* Background glow */}
+        {/* Background glows */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[120px]" />
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-indigo-600/15 rounded-full blur-[140px]" />
+          <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] bg-purple-600/10 rounded-full blur-[100px]" />
+          <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-cyan-600/10 rounded-full blur-[100px]" />
         </div>
 
         <div className="relative max-w-4xl mx-auto text-center">
@@ -56,24 +58,43 @@ export default function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-sm font-medium mb-6">
+            <motion.span
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-sm font-medium mb-6"
+            >
               <Zap size={14} />
-              Gamified Learning Platform
-            </span>
+              Code. Play. Level up.
+            </motion.span>
 
-            <h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6">
-              Master Tech
+            <h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6 leading-tight">
+              Learn to Code
               <br />
-              <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                by Playing
+              <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-pink-400 bg-clip-text text-transparent">
+                by Playing a Game
               </span>
             </h1>
 
             <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Learn any technical course through interactive concept cards and
-              hands-on challenges — not boring videos or passive quizzes.
-              Beginner to Pro, one step at a time.
+              Write real code. Control a hero. Conquer dungeons.
+              Every level teaches a concept — functions, loops, objects — through
+              hands-on challenges, not passive videos.
             </p>
+
+            {/* Mini game preview */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="inline-flex items-center gap-1 p-2 rounded-xl bg-slate-900 border border-slate-700 mb-10 font-mono text-xs text-green-400 shadow-lg"
+            >
+              <span className="px-2 py-1 rounded bg-slate-800">hero</span>
+              <span className="text-white/40">.</span>
+              <span className="px-2 py-1 rounded bg-indigo-900/60 text-indigo-300">moveRight</span>
+              <span className="text-white/40">()</span>
+              <span className="ml-2 px-2 py-1 rounded bg-green-900/40 text-green-400">→ 🦸 moves</span>
+            </motion.div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
