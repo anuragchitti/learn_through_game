@@ -3,19 +3,26 @@ import { use, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
+import type { editor as MonacoEditorNS } from "monaco-editor";
 import { getLevelsForCourse, getLevel, getNextLevel } from "@/game-engine/levels";
 import { runUserCode } from "@/game-engine/CodeRunner";
-import { CharacterClass, HERO_AVATAR, getCharacter } from "@/game-engine/characters";
+import { CharacterClass, HERO_AVATAR } from "@/game-engine/characters";
 import { runCommands, buildInitialState, checkObjectives } from "@/game-engine/WorldEngine";
 import { WorldState, LevelDefinition, GameResult } from "@/game-engine/types";
 import GameWorld from "@/components/game-ui/GameWorld";
 import ConceptPanel from "@/components/game-ui/ConceptPanel";
 import ObjectivesPanel from "@/components/game-ui/ObjectivesPanel";
-import { Play, RotateCcw, ChevronRight, ChevronLeft, Lightbulb, Trophy, AlertCircle, Zap } from "lucide-react";
+import { Play, RotateCcw, ChevronRight, ChevronLeft, Lightbulb, Trophy, AlertCircle, Zap, CheckCircle, Loader } from "lucide-react";
 import { getCourseBySlug } from "@/data/courses";
 import Link from "next/link";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+
+type ValidationState =
+  | { status: "idle" }
+  | { status: "validating" }
+  | { status: "ok"; commandCount: number }
+  | { status: "error"; message: string };
 
 type Params = { slug: string; level: string };
 
@@ -40,8 +47,12 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
   const [showHint, setShowHint] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
   const [characterClass, setCharacterClass] = useState<CharacterClass>("warrior");
+  const [validation, setValidation] = useState<ValidationState>({ status: "idle" });
 
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const validateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editorRef = useRef<MonacoEditorNS.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("ltg_character") as CharacterClass | null;
@@ -54,6 +65,83 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     }
   }, [levelDef]);
 
+  // Debounced real-time validation: runs 400ms after user stops typing
+  const validateCode = useCallback((currentCode: string, cls: CharacterClass) => {
+    if (validateTimer.current) clearTimeout(validateTimer.current);
+    setValidation({ status: "validating" });
+
+    validateTimer.current = setTimeout(() => {
+      const { commands, error } = runUserCode(currentCode, cls);
+
+      if (error) {
+        setValidation({ status: "error", message: error });
+
+        // Add Monaco squiggles when we have editor + monaco refs
+        if (editorRef.current && monacoRef.current) {
+          const model = editorRef.current.getModel();
+          if (model) {
+            // Try to extract line number from error (e.g. "SyntaxError ... line 3")
+            const lineMatch = error.match(/line\s+(\d+)/i) ?? error.match(/:(\d+):/);
+            const line = lineMatch ? parseInt(lineMatch[1], 10) : 1;
+            monacoRef.current.editor.setModelMarkers(model, "ltg-validator", [
+              {
+                severity: monacoRef.current.MarkerSeverity.Error,
+                message: error,
+                startLineNumber: line,
+                endLineNumber: line,
+                startColumn: 1,
+                endColumn: model.getLineMaxColumn(line),
+              },
+            ]);
+          }
+        }
+      } else {
+        setValidation({ status: "ok", commandCount: commands.length });
+        // Clear markers on valid code
+        if (editorRef.current && monacoRef.current) {
+          const model = editorRef.current.getModel();
+          if (model) monacoRef.current.editor.setModelMarkers(model, "ltg-validator", []);
+        }
+      }
+    }, 400);
+  }, []);
+
+  // Trigger validation whenever code or class changes
+  useEffect(() => {
+    if (code.trim()) validateCode(code, characterClass);
+    else setValidation({ status: "idle" });
+  }, [code, characterClass, validateCode]);
+
+  function handleEditorMount(
+    ed: MonacoEditorNS.IStandaloneCodeEditor,
+    monaco: typeof import("monaco-editor")
+  ) {
+    editorRef.current = ed;
+    monacoRef.current = monaco;
+
+    // Inject hero API type hints for autocomplete via the top-level typescript namespace
+    // (monaco 0.55+ uses top-level "typescript" rather than "languages.typescript")
+    const classApis: Record<CharacterClass, string> = {
+      warrior: "moveRight():void; moveLeft():void; moveUp():void; moveDown():void; move(dir:string):void; attack(dir?:string):void; say(msg:string):void; wait():void; charge(dir?:string):void; shield():void;",
+      mage:    "moveRight():void; moveLeft():void; moveUp():void; moveDown():void; move(dir:string):void; attack(dir?:string):void; say(msg:string):void; wait():void; blink(dir:string):void; fireball(dir:string):void;",
+      archer:  "moveRight():void; moveLeft():void; moveUp():void; moveDown():void; move(dir:string):void; attack(dir?:string):void; say(msg:string):void; wait():void; shoot(dir:string):void; dash(dir:string):void;",
+    };
+
+    const heroTypeDef = `declare const hero: { ${classApis[characterClass]} };`;
+    try {
+      // Monaco 0.55+: top-level typescript namespace
+      const ts = (monaco as unknown as { typescript?: { javascriptDefaults?: { addExtraLib(src: string, path: string): void; getExtraLibs(): Record<string, unknown> } } }).typescript;
+      if (ts?.javascriptDefaults) {
+        const existing = ts.javascriptDefaults.getExtraLibs();
+        if (!existing["ltg-hero"]) {
+          ts.javascriptDefaults.addExtraLib(heroTypeDef, "ltg-hero");
+        }
+      }
+    } catch {
+      // Type hints are best-effort — don't break if API not available
+    }
+  }
+
   function resetLevel(def: LevelDefinition) {
     const initial = buildInitialState(def);
     setWorldState(initial);
@@ -64,7 +152,14 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     setResult(null);
     setIsAnimating(false);
     setShowHint(false);
+    setValidation({ status: "idle" });
     if (animRef.current) clearTimeout(animRef.current);
+    if (validateTimer.current) clearTimeout(validateTimer.current);
+    // Clear markers
+    if (editorRef.current && monacoRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) monacoRef.current.editor.setModelMarkers(model, "ltg-validator", []);
+    }
   }
 
   const runCode = useCallback(() => {
@@ -212,6 +307,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
               defaultLanguage="javascript"
               value={code}
               onChange={(v) => setCode(v ?? "")}
+              onMount={handleEditorMount}
               theme="vs-dark"
               options={{
                 fontSize: 14,
@@ -221,7 +317,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
                 scrollBeyondLastLine: false,
                 padding: { top: 16, bottom: 16 },
                 folding: false,
-                glyphMargin: false,
+                glyphMargin: true,
                 renderLineHighlight: "line",
                 bracketPairColorization: { enabled: true },
                 automaticLayout: true,
@@ -230,12 +326,38 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
             />
           </div>
 
+          {/* Validation status bar */}
+          <div className="border-t border-white/5 px-4 py-1.5 flex items-center gap-2 bg-[#0d0d14] min-h-[32px]">
+            {validation.status === "idle" && (
+              <span className="text-xs text-white/20">Write code above to see a live preview</span>
+            )}
+            {validation.status === "validating" && (
+              <span className="flex items-center gap-1.5 text-xs text-white/30">
+                <Loader size={11} className="animate-spin" />
+                Checking...
+              </span>
+            )}
+            {validation.status === "ok" && (
+              <span className="flex items-center gap-1.5 text-xs text-green-400/80">
+                <CheckCircle size={11} />
+                {validation.commandCount} command{validation.commandCount !== 1 ? "s" : ""} ready — press Run
+              </span>
+            )}
+            {validation.status === "error" && (
+              <span className="flex items-center gap-1.5 text-xs text-red-400/80 truncate">
+                <AlertCircle size={11} className="shrink-0" />
+                <span className="truncate">{validation.message}</span>
+              </span>
+            )}
+          </div>
+
           {/* Control bar */}
           <div className="border-t border-white/10 px-4 py-3 flex items-center gap-3 bg-[#0d0d14]">
             <button
               onClick={runCode}
-              disabled={isAnimating}
-              className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm"
+              disabled={isAnimating || validation.status === "error"}
+              title={validation.status === "error" ? "Fix errors before running" : undefined}
+              className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm"
             >
               <Play size={15} />
               {isAnimating ? "Running..." : "Run Code"}
