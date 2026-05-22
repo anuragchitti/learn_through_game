@@ -11,7 +11,8 @@ function AuthContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
 
-  const [mode, setMode] = useState<"signin" | "signup">("signup");
+  const modeParam = searchParams.get("mode");
+  const [mode, setMode] = useState<"signin" | "signup">(modeParam === "signin" ? "signin" : "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");

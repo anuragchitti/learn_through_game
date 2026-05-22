@@ -349,7 +349,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
           <div className="flex-1 min-h-0" style={{ minHeight: "280px" }}>
             <MonacoEditor
               height="100%"
-              defaultLanguage="javascript"
+              defaultLanguage={slug === "python" ? "python" : "javascript"}
               value={code}
               onChange={(v) => setCode(v ?? "")}
               onMount={handleEditorMount}

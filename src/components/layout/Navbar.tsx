@@ -137,7 +137,7 @@ export default function Navbar() {
           ) : (
             <>
               <Link
-                href="/auth"
+                href="/auth?mode=signin"
                 className="px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
               >
                 Sign in
@@ -208,7 +208,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/auth" onClick={() => setMobileOpen(false)} className="px-4 py-3 text-sm text-white/70 hover:text-white">
+                <Link href="/auth?mode=signin" onClick={() => setMobileOpen(false)} className="px-4 py-3 text-sm text-white/70 hover:text-white">
                   Sign in
                 </Link>
                 <Link
