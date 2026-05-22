@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BookOpen, LayoutDashboard, Award, Menu, X, Trophy, LogOut, User, Settings } from "lucide-react";
+import { BookOpen, LayoutDashboard, Menu, X, Trophy, LogOut, User, Settings } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -10,7 +10,6 @@ const navLinks = [
   { href: "/courses", label: "Courses", icon: BookOpen },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { href: "/certificate", label: "Certificates", icon: Award },
 ];
 
 export default function Navbar() {
