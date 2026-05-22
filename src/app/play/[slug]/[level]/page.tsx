@@ -15,6 +15,8 @@ import ObjectivesPanel from "@/components/game-ui/ObjectivesPanel";
 import { Play, RotateCcw, ChevronRight, ChevronLeft, Lightbulb, Trophy, AlertCircle, Zap, CheckCircle, Loader } from "lucide-react";
 import { getCourseBySlug } from "@/data/courses";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+import { saveCompletion, saveLocalXP } from "@/lib/db";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -205,6 +207,23 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
         if (gameResult) {
           setResult(gameResult);
           setXpEarned(gameResult.xpEarned);
+
+          // Fire-and-forget XP persistence — don't block UI
+          if (gameResult.success) {
+            if (supabase) {
+              supabase.auth.getUser().then(({ data }) => {
+                if (data.user) {
+                  saveCompletion(data.user.id, slug, levelNumber, gameResult.xpEarned);
+                } else {
+                  // Not logged in — save to localStorage as fallback
+                  saveLocalXP(slug, levelNumber, gameResult.xpEarned);
+                }
+              });
+            } else {
+              // Supabase not configured — always use localStorage
+              saveLocalXP(slug, levelNumber, gameResult.xpEarned);
+            }
+          }
         } else {
           // Build a partial feedback message
           const missingObjectives = levelDef!.objectives

@@ -2,7 +2,9 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { GitBranch, Mail, Eye, EyeOff } from "lucide-react";
+import { GitBranch, Mail, Eye, EyeOff, Info } from "lucide-react";
+import { supabase, supabaseEnabled } from "@/lib/supabase";
+import { upsertProfile } from "@/lib/db";
 
 function AuthContent() {
   const router = useRouter();
@@ -15,19 +17,90 @@ function AuthContent() {
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    // Simulate auth — in production, connect to NextAuth / Supabase
-    await new Promise((r) => setTimeout(r, 800));
+    setError(null);
+    setMessage(null);
+
+    if (!supabase) {
+      // Demo mode — just redirect
+      await new Promise((r) => setTimeout(r, 600));
+      setLoading(false);
+      router.push(next);
+      return;
+    }
+
+    if (mode === "signup") {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Save character class from onboarding sessionStorage
+        const characterClass =
+          (typeof window !== "undefined" &&
+            sessionStorage.getItem("ltg_character")) ||
+          "warrior";
+        await upsertProfile(data.user.id, {
+          username: name || email.split("@")[0],
+          character_class: characterClass,
+        });
+      }
+
+      setMessage(
+        "Check your email to confirm your account, then sign in below."
+      );
+      setMode("signin");
+    } else {
+      const { data, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        const characterClass =
+          (typeof window !== "undefined" &&
+            sessionStorage.getItem("ltg_character")) ||
+          "warrior";
+        await upsertProfile(data.user.id, { character_class: characterClass });
+      }
+
+      router.push(next);
+    }
+
     setLoading(false);
-    router.push(next);
   }
 
-  function handleOAuth(provider: string) {
-    console.log(`OAuth with ${provider}`);
-    router.push(next);
+  async function handleOAuth(provider: "github" | "google") {
+    if (!supabase) {
+      router.push(next);
+      return;
+    }
+
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}${next}` },
+    });
+
+    if (oauthError) {
+      setError(oauthError.message);
+    }
   }
 
   return (
@@ -48,6 +121,29 @@ function AuthContent() {
               : "Continue your learning journey"}
           </p>
         </div>
+
+        {/* Demo mode notice */}
+        {!supabaseEnabled && (
+          <div className="mb-4 flex items-start gap-2.5 px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-sm text-indigo-300">
+            <Info size={16} className="shrink-0 mt-0.5" />
+            <span>
+              <strong>Demo mode</strong> — Supabase is not configured. Progress
+              is saved locally and auth redirects immediately.
+            </span>
+          </div>
+        )}
+
+        {/* Error / info messages */}
+        {error && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+        {message && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-green-300">
+            {message}
+          </div>
+        )}
 
         <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
           {/* OAuth buttons */}
@@ -77,7 +173,9 @@ function AuthContent() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
               <div>
-                <label className="text-sm text-white/50 block mb-1.5">Full name</label>
+                <label className="text-sm text-white/50 block mb-1.5">
+                  Full name
+                </label>
                 <input
                   type="text"
                   value={name}
@@ -90,9 +188,14 @@ function AuthContent() {
             )}
 
             <div>
-              <label className="text-sm text-white/50 block mb-1.5">Email</label>
+              <label className="text-sm text-white/50 block mb-1.5">
+                Email
+              </label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                <Mail
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
+                />
                 <input
                   type="email"
                   value={email}
@@ -105,7 +208,9 @@ function AuthContent() {
             </div>
 
             <div>
-              <label className="text-sm text-white/50 block mb-1.5">Password</label>
+              <label className="text-sm text-white/50 block mb-1.5">
+                Password
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -131,14 +236,24 @@ function AuthContent() {
               disabled={loading}
               className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors mt-2"
             >
-              {loading ? "Loading..." : mode === "signup" ? "Create Account" : "Sign In"}
+              {loading
+                ? "Loading..."
+                : mode === "signup"
+                ? "Create Account"
+                : "Sign In"}
             </button>
           </form>
 
           <p className="text-center text-sm text-white/40 mt-6">
-            {mode === "signup" ? "Already have an account?" : "Don't have an account?"}{" "}
+            {mode === "signup"
+              ? "Already have an account?"
+              : "Don't have an account?"}{" "}
             <button
-              onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+              onClick={() => {
+                setMode(mode === "signup" ? "signin" : "signup");
+                setError(null);
+                setMessage(null);
+              }}
               className="text-indigo-400 hover:text-indigo-300 font-medium"
             >
               {mode === "signup" ? "Sign in" : "Sign up"}
@@ -152,7 +267,13 @@ function AuthContent() {
 
 export default function AuthPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-white/50">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-white/50">
+          Loading...
+        </div>
+      }
+    >
       <AuthContent />
     </Suspense>
   );
