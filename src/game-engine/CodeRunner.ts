@@ -31,7 +31,9 @@ export function runUserCode(
       }
     }
 
-    const fn = new Function("hero", `"use strict";\n${code}`);
+    // Strip Python-style # comments so the JS sandbox doesn't choke on them
+    const sanitized = code.replace(/#[^\n]*/g, "");
+    const fn = new Function("hero", `"use strict";\n${sanitized}`);
     fn(hero);
 
     return { commands, error: null };
