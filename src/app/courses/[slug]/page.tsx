@@ -3,6 +3,7 @@ import { getLevelsForCourse, warriorLevels, mageLevels, archerLevels } from "@/g
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Clock, BookOpen, Trophy, Play, ChevronRight, Lock, Sword } from "lucide-react";
+import LevelMap from "@/components/game-ui/LevelMap";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -17,11 +18,6 @@ export default async function CourseDetailPage({ params }: Props) {
 
   const levels = getLevelsForCourse(slug);
   const hasLevels = levels.length > 0;
-
-  // Group levels by concept area (every 4 = one "world")
-  const worlds = Array.from({ length: Math.ceil(levels.length / 4) }, (_, i) =>
-    levels.slice(i * 4, i * 4 + 4)
-  );
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6">
@@ -58,33 +54,7 @@ export default async function CourseDetailPage({ params }: Props) {
               </Link>
             </div>
 
-            <div className="space-y-6">
-              {worlds.map((world, wi) => (
-                <div key={wi} className="p-5 rounded-2xl bg-white/5 border border-white/10">
-                  <div className="text-xs text-white/30 font-medium uppercase tracking-wide mb-4">
-                    World {wi + 1}
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {world.map((lvl) => (
-                      <Link
-                        key={lvl.id}
-                        href={`/play/${slug}/${lvl.number}`}
-                        className="group flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-indigo-500/50 hover:bg-indigo-600/10 transition-all"
-                      >
-                        <div className="w-9 h-9 rounded-full bg-indigo-600/20 flex items-center justify-center text-sm font-bold text-indigo-300 shrink-0 group-hover:bg-indigo-600/40 transition-colors">
-                          {lvl.number}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-medium text-sm truncate">{lvl.title}</div>
-                          <div className="text-xs text-white/40 truncate">{lvl.concept}</div>
-                        </div>
-                        <ChevronRight size={14} className="text-white/20 group-hover:text-indigo-400 ml-auto shrink-0 transition-colors" />
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <LevelMap slug={slug} levels={levels} />
           </>
         ) : (
           /* Placeholder for courses without levels yet */

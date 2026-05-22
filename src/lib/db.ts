@@ -139,6 +139,15 @@ export async function getUserProfile(userId: string): Promise<ProfileData | null
   return data as ProfileData;
 }
 
+/** Delete the current user's data and sign them out. */
+export async function deleteMyData(): Promise<{ error: string | null }> {
+  if (!supabase) return { error: "Supabase not configured" };
+  const { error } = await supabase.rpc("delete_my_account");
+  if (error) return { error: error.message };
+  await supabase.auth.signOut();
+  return { error: null };
+}
+
 /** Create or update profile metadata (username, character_class). */
 export async function upsertProfile(
   userId: string,

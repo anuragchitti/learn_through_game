@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BookOpen, LayoutDashboard, Award, Menu, X, Trophy, LogOut, User } from "lucide-react";
+import { BookOpen, LayoutDashboard, Award, Menu, X, Trophy, LogOut, User, Settings } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -117,6 +117,14 @@ export default function Navbar() {
                     <User size={14} />
                     Dashboard
                   </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    <Settings size={14} />
+                    Settings
+                  </Link>
                   <button
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors"
@@ -183,6 +191,14 @@ export default function Navbar() {
                   </span>
                   <span className="text-sm text-white/60 truncate">{userEmail}</span>
                 </div>
+                <Link
+                  href="/settings"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 px-4 py-3 text-sm text-white/70 hover:bg-white/10 hover:text-white rounded-xl transition-colors"
+                >
+                  <Settings size={16} />
+                  Settings
+                </Link>
                 <button
                   onClick={() => { setMobileOpen(false); handleSignOut(); }}
                   className="flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/5 rounded-xl transition-colors"

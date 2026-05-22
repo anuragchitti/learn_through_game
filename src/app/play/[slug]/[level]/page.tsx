@@ -12,11 +12,12 @@ import { WorldState, LevelDefinition, GameResult } from "@/game-engine/types";
 import GameWorld from "@/components/game-ui/GameWorld";
 import ConceptPanel from "@/components/game-ui/ConceptPanel";
 import ObjectivesPanel from "@/components/game-ui/ObjectivesPanel";
-import { Play, RotateCcw, ChevronRight, ChevronLeft, Lightbulb, Trophy, AlertCircle, Zap, CheckCircle, Loader } from "lucide-react";
+import { Play, RotateCcw, ChevronRight, ChevronLeft, Lightbulb, Trophy, AlertCircle, Zap, CheckCircle, Loader, Pencil, Gamepad2 } from "lucide-react";
 import { getCourseBySlug } from "@/data/courses";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { saveCompletion, saveLocalXP } from "@/lib/db";
+import { playGemCollect, playLevelComplete, playError, playAttack } from "@/lib/sounds";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
@@ -50,6 +51,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
   const [xpEarned, setXpEarned] = useState(0);
   const [characterClass, setCharacterClass] = useState<CharacterClass>("warrior");
   const [validation, setValidation] = useState<ValidationState>({ status: "idle" });
+  const [mobileTab, setMobileTab] = useState<"code" | "world">("code");
 
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const validateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -174,6 +176,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     const { commands, error } = runUserCode(code, characterClass);
     if (error) {
       setCodeError(error);
+      playError();
       return;
     }
 
@@ -190,15 +193,30 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     function step() {
       i++;
       if (i < allSnapshots.length) {
+        const prev = allSnapshots[i - 1];
+        const curr = allSnapshots[i];
+
+        // Sound: gem collected (gems count went up)
+        if (curr.gemsCollected > (prev?.gemsCollected ?? 0)) {
+          playGemCollect();
+        }
+
+        // Sound: enemy defeated (enemy count went down)
+        if ((prev?.enemiesDefeated ?? 0) < curr.enemiesDefeated) {
+          playAttack();
+        }
+
         setSnapshotIndex(i);
-        setPrevWorldState(allSnapshots[i - 1] ?? null);
-        setWorldState(allSnapshots[i]);
+        setPrevWorldState(prev ?? null);
+        setWorldState(curr);
         animRef.current = setTimeout(step, 350);
       } else {
         setIsAnimating(false);
+        setMobileTab("world"); // auto-switch to world on mobile when animation finishes
         const finalState = allSnapshots[allSnapshots.length - 1];
 
         if (!finalState.isAlive) {
+          playError();
           setResult({ success: false, reason: finalState.message ?? "The hero was defeated.", gemsCollected: finalState.gemsCollected, commandsUsed: finalState.commandsUsed, xpEarned: 0 });
           return;
         }
@@ -207,6 +225,11 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
         if (gameResult) {
           setResult(gameResult);
           setXpEarned(gameResult.xpEarned);
+          if (gameResult.success) {
+            playLevelComplete();
+          } else {
+            playError();
+          }
 
           // Fire-and-forget XP persistence — don't block UI
           if (gameResult.success) {
@@ -236,6 +259,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
               return null;
             })
             .filter(Boolean);
+          playError();
           setResult({
             success: false,
             reason: `Not done yet: ${missingObjectives.join(", ")}`,
@@ -311,9 +335,11 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
       </div>
 
       {/* Main layout */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-0 h-full">
+      {/* On mobile: pb-16 to leave room for the fixed bottom tab bar */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-0 h-full pb-16 md:pb-0">
         {/* LEFT: Editor + controls */}
-        <div className="flex flex-col border-r border-white/10 min-h-0">
+        {/* On mobile: hidden when World tab active */}
+        <div className={`flex flex-col border-r border-white/10 min-h-0 ${mobileTab === "world" ? "hidden lg:flex" : "flex"}`}>
           {/* Mission description */}
           <div className="px-4 py-3 border-b border-white/10 bg-indigo-600/5">
             <p className="text-sm text-white/70">{levelDef.description}</p>
@@ -370,8 +396,8 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
             )}
           </div>
 
-          {/* Control bar */}
-          <div className="border-t border-white/10 px-4 py-3 flex items-center gap-3 bg-[#0d0d14]">
+          {/* Control bar — hidden on mobile (Run button is in the fixed bottom bar instead) */}
+          <div className="border-t border-white/10 px-4 py-3 hidden md:flex items-center gap-3 bg-[#0d0d14]">
             <button
               onClick={runCode}
               disabled={isAnimating || validation.status === "error"}
@@ -432,7 +458,8 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
         </div>
 
         {/* RIGHT: World + panels */}
-        <div className="flex flex-col gap-4 p-4 overflow-y-auto">
+        {/* On mobile: hidden when Code tab active */}
+        <div className={`flex-col gap-4 p-4 overflow-y-auto ${mobileTab === "code" ? "hidden lg:flex" : "flex"}`}>
           {/* Game world */}
           <div className="flex items-center justify-center p-4 rounded-2xl bg-gray-900/60 border border-white/10">
             <GameWorld state={currentState} prevState={prevWorldState ?? undefined} isAnimating={isAnimating} characterClass={characterClass} />
@@ -444,6 +471,44 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
           {/* Concept panel */}
           <ConceptPanel level={levelDef} />
         </div>
+      </div>
+
+      {/* Mobile bottom tab bar (hidden on md+) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center border-t border-white/10 bg-[#0d0d14]/95 backdrop-blur-xl h-16">
+        {/* Code tab */}
+        <button
+          onClick={() => setMobileTab("code")}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors ${
+            mobileTab === "code" ? "text-indigo-400" : "text-white/40 hover:text-white/70"
+          }`}
+        >
+          <Pencil size={18} />
+          <span className="text-xs font-medium">Code</span>
+        </button>
+
+        {/* Run button (center) */}
+        <div className="px-3">
+          <button
+            onClick={runCode}
+            disabled={isAnimating || validation.status === "error"}
+            title={validation.status === "error" ? "Fix errors before running" : undefined}
+            className="flex items-center gap-1.5 px-5 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm"
+          >
+            <Play size={15} />
+            {isAnimating ? "..." : "Run"}
+          </button>
+        </div>
+
+        {/* World tab */}
+        <button
+          onClick={() => setMobileTab("world")}
+          className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors ${
+            mobileTab === "world" ? "text-indigo-400" : "text-white/40 hover:text-white/70"
+          }`}
+        >
+          <Gamepad2 size={18} />
+          <span className="text-xs font-medium">World</span>
+        </button>
       </div>
 
       {/* Result overlay */}
