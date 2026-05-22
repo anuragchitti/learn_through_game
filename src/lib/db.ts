@@ -1,5 +1,13 @@
 import { supabase } from "@/lib/supabase";
 import { getProgress, saveProgress } from "@/lib/progress";
+import { getLevelsForCourse } from "@/game-engine/levels";
+
+export interface CertificateData {
+  id: string;
+  userId: string;
+  courseSlug: string;
+  issuedAt: string;
+}
 
 export interface LeaderboardEntry {
   id?: string;
@@ -15,6 +23,9 @@ export interface ProfileData {
   character_class: string | null;
   total_xp: number;
   levels_completed: number;
+  current_streak: number;
+  longest_streak: number;
+  last_active_date: string | null;
   created_at?: string;
 }
 
@@ -60,12 +71,47 @@ export async function saveCompletion(
   const totalXP = (allCompletions ?? []).reduce((sum, r) => sum + (r.xp_earned ?? 0), 0);
   const levelsCompleted = (allCompletions ?? []).length;
 
+  // Streak: increment if last_active_date was yesterday, reset if older, keep if today
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("current_streak, longest_streak, last_active_date")
+    .eq("id", userId)
+    .single();
+
+  let currentStreak = profile?.current_streak ?? 0;
+  const longestStreak = profile?.longest_streak ?? 0;
+  const lastActive = profile?.last_active_date ?? null;
+
+  if (lastActive !== today) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    currentStreak = lastActive === yesterday ? currentStreak + 1 : 1;
+  }
+
+  const newLongest = Math.max(longestStreak, currentStreak);
+
   const { error: profileError } = await supabase
     .from("profiles")
-    .upsert({ id: userId, total_xp: totalXP, levels_completed: levelsCompleted }, { onConflict: "id" });
+    .upsert(
+      { id: userId, total_xp: totalXP, levels_completed: levelsCompleted, current_streak: currentStreak, longest_streak: newLongest, last_active_date: today },
+      { onConflict: "id" }
+    );
 
   if (profileError) {
     console.error("saveCompletion profile upsert error:", profileError);
+  }
+
+  // Course completion → issue certificate if all levels done
+  const { data: courseCompletions } = await supabase
+    .from("level_completions")
+    .select("level_number")
+    .eq("user_id", userId)
+    .eq("course_slug", courseSlug);
+
+  const completedSet = new Set((courseCompletions ?? []).map((r) => r.level_number));
+  const totalCourseLevels = getLevelsForCourse(courseSlug).length;
+  if (totalCourseLevels > 0 && completedSet.size >= totalCourseLevels) {
+    await issueCertificate(userId, courseSlug);
   }
 }
 
@@ -146,6 +192,38 @@ export async function deleteMyData(): Promise<{ error: string | null }> {
   if (error) return { error: error.message };
   await supabase.auth.signOut();
   return { error: null };
+}
+
+/** Issue a certificate for completing a course (idempotent via unique constraint). */
+export async function issueCertificate(userId: string, courseSlug: string): Promise<void> {
+  if (!supabase) return;
+  await supabase
+    .from("certificates")
+    .upsert({ user_id: userId, course_slug: courseSlug }, { onConflict: "user_id,course_slug", ignoreDuplicates: true });
+}
+
+/** Fetch a single certificate by id. */
+export async function getCertificate(id: string): Promise<CertificateData | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("certificates")
+    .select("id, user_id, course_slug, issued_at")
+    .eq("id", id)
+    .single();
+  if (error || !data) return null;
+  return { id: data.id, userId: data.user_id, courseSlug: data.course_slug, issuedAt: data.issued_at };
+}
+
+/** Fetch all certificates for a user. */
+export async function getUserCertificates(userId: string): Promise<CertificateData[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("certificates")
+    .select("id, user_id, course_slug, issued_at")
+    .eq("user_id", userId)
+    .order("issued_at", { ascending: false });
+  if (error) return [];
+  return (data ?? []).map((r) => ({ id: r.id, userId: r.user_id, courseSlug: r.course_slug, issuedAt: r.issued_at }));
 }
 
 /** Create or update profile metadata (username, character_class). */
