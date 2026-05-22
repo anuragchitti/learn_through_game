@@ -1,9 +1,31 @@
 import { Trophy, Award } from "lucide-react";
+import { getCertificate } from "@/lib/db";
+import { getUserProfile } from "@/lib/db";
+import { getCourseBySlug } from "@/data/courses";
+import { notFound } from "next/navigation";
+import Link from "next/link";
 
 type Props = { params: Promise<{ id: string }> };
 
 export default async function CertificatePage({ params }: Props) {
   const { id } = await params;
+
+  const cert = await getCertificate(id);
+  if (!cert) notFound();
+
+  const [profile, course] = await Promise.all([
+    getUserProfile(cert.userId),
+    Promise.resolve(getCourseBySlug(cert.courseSlug)),
+  ]);
+
+  const recipientName = profile?.username ?? "Learner";
+  const courseName = course?.title ?? cert.courseSlug;
+  const courseIcon = course?.icon ?? "🎓";
+  const issuedDate = new Date(cert.issuedAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
@@ -25,29 +47,32 @@ export default async function CertificatePage({ params }: Props) {
           <h1 className="text-3xl font-bold text-white mb-2">LearnThroughGame</h1>
           <p className="text-white/50 mb-8">This certifies that</p>
 
-          <div className="text-4xl font-bold text-white mb-2">Learner</div>
-          <p className="text-white/50 mb-8">
-            has successfully completed all four levels of
-          </p>
+          <div className="text-4xl font-bold text-white mb-2">{recipientName}</div>
+          <p className="text-white/50 mb-8">has successfully completed all levels of</p>
 
           <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-8">
-            <Award size={24} className="text-yellow-400" />
-            <span className="text-xl font-bold text-white">Course Name</span>
+            <span className="text-2xl">{courseIcon}</span>
+            <Award size={20} className="text-yellow-400" />
+            <span className="text-xl font-bold text-white">{courseName}</span>
           </div>
 
-          <div className="text-white/30 text-sm mb-2">
-            Issued on {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-          </div>
+          <div className="text-white/30 text-sm mb-2">Issued on {issuedDate}</div>
           <div className="font-mono text-xs text-white/20">{id}</div>
         </div>
 
         {/* Actions */}
         <div className="flex gap-3 mt-6 justify-center">
-          <button className="px-6 py-3 bg-white/10 border border-white/20 text-white font-medium rounded-xl hover:bg-white/15 transition-colors">
+          <Link
+            href="/dashboard"
+            className="px-6 py-3 bg-white/10 border border-white/20 text-white font-medium rounded-xl hover:bg-white/15 transition-colors"
+          >
+            Back to Dashboard
+          </Link>
+          <button
+            onClick={undefined}
+            className="px-6 py-3 bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 font-medium rounded-xl hover:bg-yellow-500/30 transition-colors"
+          >
             Share Certificate
-          </button>
-          <button className="px-6 py-3 bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 font-medium rounded-xl hover:bg-yellow-500/30 transition-colors">
-            Download PDF
           </button>
         </div>
       </div>

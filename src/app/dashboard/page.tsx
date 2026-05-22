@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { getCourseBySlug, courses } from "@/data/courses";
 import { getLevelsForCourse } from "@/game-engine/levels";
 import { supabase } from "@/lib/supabase";
-import { getUserProfile, getUserCompletions } from "@/lib/db";
-import { Zap, Trophy, ArrowRight, BookOpen, User } from "lucide-react";
+import { getUserProfile, getUserCompletions, getUserCertificates, CertificateData } from "@/lib/db";
+import { Zap, Trophy, ArrowRight, BookOpen, User, Flame, Award } from "lucide-react";
 import { HERO_AVATAR } from "@/game-engine/characters";
 import type { CharacterClass } from "@/game-engine/characters";
 
@@ -26,7 +26,9 @@ export default function DashboardPage() {
   const [characterClass, setCharacterClass] = useState<CharacterClass>("warrior");
   const [totalXP, setTotalXP] = useState(0);
   const [levelsCompleted, setLevelsCompleted] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [courseSummaries, setCourseSummaries] = useState<CourseSummary[]>([]);
+  const [certificates, setCertificates] = useState<CertificateData[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
@@ -54,10 +56,15 @@ export default function DashboardPage() {
         setUsername(profile.username);
         setTotalXP(profile.total_xp);
         setLevelsCompleted(profile.levels_completed);
+        setCurrentStreak(profile.current_streak ?? 0);
         if (profile.character_class) {
           setCharacterClass(profile.character_class as CharacterClass);
         }
       }
+
+      // Load certificates
+      const certs = await getUserCertificates(user.id);
+      setCertificates(certs);
 
       // Load per-course completion breakdown
       const completions = await getUserCompletions(user.id);
@@ -137,7 +144,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-10">
+        <div className="grid grid-cols-4 gap-4 mb-10">
           <div className="p-5 rounded-2xl bg-white/5 border border-white/10 text-center">
             <Zap size={24} className="text-yellow-400 mx-auto mb-2" />
             <div className="text-2xl font-bold">{totalXP.toLocaleString()}</div>
@@ -147,6 +154,11 @@ export default function DashboardPage() {
             <BookOpen size={24} className="text-indigo-400 mx-auto mb-2" />
             <div className="text-2xl font-bold">{levelsCompleted}</div>
             <div className="text-xs text-white/40 mt-0.5">Levels Done</div>
+          </div>
+          <div className="p-5 rounded-2xl bg-white/5 border border-white/10 text-center">
+            <Flame size={24} className="text-orange-400 mx-auto mb-2" />
+            <div className="text-2xl font-bold">{currentStreak}</div>
+            <div className="text-xs text-white/40 mt-0.5">Day Streak</div>
           </div>
           <div className="p-5 rounded-2xl bg-white/5 border border-white/10 text-center">
             <User size={24} className="text-green-400 mx-auto mb-2" />
@@ -212,15 +224,39 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Certificates placeholder */}
+        {/* Certificates */}
         <div className="mt-10">
           <div className="flex items-center gap-2 mb-4">
             <Trophy size={18} className="text-yellow-400" />
             <h2 className="text-lg font-semibold">Certificates</h2>
           </div>
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/40 text-sm text-center">
-            Complete all levels of any course to earn a certificate.
-          </div>
+          {certificates.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-white/40 text-sm text-center">
+              Complete all levels of any course to earn a certificate.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {certificates.map((cert) => {
+                const course = courses.find((c) => c.slug === cert.courseSlug);
+                return (
+                  <Link
+                    key={cert.id}
+                    href={`/certificate/${cert.id}`}
+                    className="flex items-center gap-4 p-4 rounded-2xl bg-yellow-500/5 border border-yellow-500/20 hover:border-yellow-500/40 transition-colors"
+                  >
+                    <span className="text-3xl">{course?.icon ?? "🎓"}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-white">{course?.title ?? cert.courseSlug}</div>
+                      <div className="text-xs text-white/40">
+                        Issued {new Date(cert.issuedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                      </div>
+                    </div>
+                    <Award size={20} className="text-yellow-400 shrink-0" />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
