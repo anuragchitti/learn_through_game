@@ -13,13 +13,25 @@ export default async function ConfirmPage({
 
   if (token_hash && type && url && key) {
     const supabase = createClient(url, key);
-    const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as "email" });
+    const { data, error } = await supabase.auth.verifyOtp({
+      token_hash,
+      type: type as "email",
+    });
 
-    if (!error) {
+    if (!error && data.user) {
+      // Create profile now that the session is active and RLS auth.uid() works.
+      // Derive username from user metadata (set during signUp) or email prefix.
+      const fullName = data.user.user_metadata?.full_name as string | undefined;
+      const username = fullName || data.user.email?.split("@")[0] || "player";
+
+      await supabase.from("profiles").upsert(
+        { id: data.user.id, username },
+        { onConflict: "id" }
+      );
+
       redirect(next ?? "/dashboard");
     }
   }
 
-  // Fallback: send to sign-in with a message
   redirect("/auth?message=confirmation-failed");
 }

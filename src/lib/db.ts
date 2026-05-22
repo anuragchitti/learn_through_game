@@ -19,8 +19,9 @@ export interface ProfileData {
 }
 
 /**
- * Save a level completion to Supabase (or no-op if supabase is null).
- * Also increments total_xp and levels_completed in the profiles table.
+ * Save a level completion to Supabase.
+ * Skips if the level was already completed (no XP double-counting on replays).
+ * Recomputes total_xp and levels_completed from all rows to stay accurate.
  */
 export async function saveCompletion(
   userId: string,
@@ -30,51 +31,45 @@ export async function saveCompletion(
 ): Promise<void> {
   if (!supabase) return;
 
-  // Upsert level completion (unique per user/course/level)
+  // Skip if already completed — replaying a level should not award XP again
+  const { data: existing } = await supabase
+    .from("level_completions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("course_slug", courseSlug)
+    .eq("level_number", levelNumber)
+    .single();
+
+  if (existing) return;
+
   const { error: completionError } = await supabase
     .from("level_completions")
-    .upsert(
-      {
-        user_id: userId,
-        course_slug: courseSlug,
-        level_number: levelNumber,
-        xp_earned: xpEarned,
-      },
-      { onConflict: "user_id,course_slug,level_number" }
-    );
+    .insert({ user_id: userId, course_slug: courseSlug, level_number: levelNumber, xp_earned: xpEarned });
 
   if (completionError) {
     console.error("saveCompletion error:", completionError);
     return;
   }
 
-  // Fetch current profile to accumulate XP correctly
-  const { data: profile } = await supabase
+  // Recompute totals from all rows so the counter is always accurate
+  const { data: allCompletions } = await supabase
+    .from("level_completions")
+    .select("xp_earned")
+    .eq("user_id", userId);
+
+  const totalXP = (allCompletions ?? []).reduce((sum, r) => sum + (r.xp_earned ?? 0), 0);
+  const levelsCompleted = (allCompletions ?? []).length;
+
+  const { error: profileError } = await supabase
     .from("profiles")
-    .select("total_xp, levels_completed")
-    .eq("id", userId)
-    .single();
-
-  const currentXP = profile?.total_xp ?? 0;
-  const currentLevels = profile?.levels_completed ?? 0;
-
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    {
-      id: userId,
-      total_xp: currentXP + xpEarned,
-      levels_completed: currentLevels + 1,
-    },
-    { onConflict: "id" }
-  );
+    .upsert({ id: userId, total_xp: totalXP, levels_completed: levelsCompleted }, { onConflict: "id" });
 
   if (profileError) {
     console.error("saveCompletion profile upsert error:", profileError);
   }
 }
 
-/**
- * Save XP to localStorage (fallback when user is not logged in).
- */
+/** Save XP to localStorage (fallback for unauthenticated users). */
 export function saveLocalXP(
   courseSlug: string,
   levelNumber: number,
@@ -91,10 +86,32 @@ export function saveLocalXP(
   }
 }
 
-/**
- * Fetch top players ordered by XP.
- * Falls back to [] if supabase is null.
- */
+/** Fetch all completed levels for a user. */
+export async function getUserCompletions(userId: string): Promise<{
+  courseSlug: string;
+  levelNumber: number;
+  xpEarned: number;
+  completedAt: string;
+}[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("level_completions")
+    .select("course_slug, level_number, xp_earned, completed_at")
+    .eq("user_id", userId)
+    .order("completed_at", { ascending: false });
+
+  if (error) return [];
+
+  return (data ?? []).map((r) => ({
+    courseSlug: r.course_slug,
+    levelNumber: r.level_number,
+    xpEarned: r.xp_earned,
+    completedAt: r.completed_at,
+  }));
+}
+
+/** Fetch top players ordered by XP. Returns [] if Supabase not configured. */
 export async function getLeaderboard(limit = 20): Promise<LeaderboardEntry[]> {
   if (!supabase) return [];
 
@@ -104,17 +121,11 @@ export async function getLeaderboard(limit = 20): Promise<LeaderboardEntry[]> {
     .order("total_xp", { ascending: false })
     .limit(limit);
 
-  if (error) {
-    console.error("getLeaderboard error:", error);
-    return [];
-  }
-
+  if (error) return [];
   return (data ?? []) as LeaderboardEntry[];
 }
 
-/**
- * Get a single user's profile.
- */
+/** Get a single user's profile row. */
 export async function getUserProfile(userId: string): Promise<ProfileData | null> {
   if (!supabase) return null;
 
@@ -124,26 +135,20 @@ export async function getUserProfile(userId: string): Promise<ProfileData | null
     .eq("id", userId)
     .single();
 
-  if (error) {
-    console.error("getUserProfile error:", error);
-    return null;
-  }
-
+  if (error) return null;
   return data as ProfileData;
 }
 
-/**
- * Create or update a user's profile metadata (username, character_class).
- */
+/** Create or update profile metadata (username, character_class). */
 export async function upsertProfile(
   userId: string,
-  data: { username?: string; character_class?: string }
+  profileData: { username?: string; character_class?: string }
 ): Promise<void> {
   if (!supabase) return;
 
   const { error } = await supabase
     .from("profiles")
-    .upsert({ id: userId, ...data }, { onConflict: "id" });
+    .upsert({ id: userId, ...profileData }, { onConflict: "id" });
 
   if (error) {
     console.error("upsertProfile error:", error);

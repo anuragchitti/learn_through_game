@@ -6,6 +6,8 @@ import { courses } from "@/data/courses";
 import { Goal, ExistingKnowledge, OnboardingAnswers, CourseCategory } from "@/types";
 import { characters, CharacterClass } from "@/game-engine/characters";
 import { ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { upsertProfile } from "@/lib/db";
 
 const goals: { value: Goal; label: string; icon: string; desc: string }[] = [
   { value: "get-a-job",      label: "Get a job",       icon: "💼", desc: "Learn what employers actually look for" },
@@ -54,10 +56,22 @@ export default function OnboardingPage() {
     setStep(4);
   }
 
-  function handleStart() {
+  async function handleStart() {
     if (!answers.courseSlug || !answers.goal || !answers.knowledge) return;
+    const cls = selectedClass ?? "warrior";
     sessionStorage.setItem("ltg_onboarding", JSON.stringify(answers));
-    sessionStorage.setItem("ltg_character", selectedClass ?? "warrior");
+    sessionStorage.setItem("ltg_character", cls);
+
+    // If already signed in, update character class and go straight to the course
+    if (supabase) {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        await upsertProfile(data.user.id, { character_class: cls });
+        router.push(`/courses/${answers.courseSlug}`);
+        return;
+      }
+    }
+
     router.push(`/auth?next=/courses/${answers.courseSlug}`);
   }
 
