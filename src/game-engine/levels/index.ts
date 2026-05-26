@@ -6,6 +6,7 @@ import { reactLevels } from "./react";
 import { sqlLevels } from "./sql";
 import { htmlCssLevels } from "./html-css";
 import { gitLevels } from "./git";
+import { nodejsLevels } from "./nodejs";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -19,6 +20,7 @@ export const allLevels: Record<string, LevelDefinition[]> = {
   sql: sqlLevels,
   "html-css": htmlCssLevels,
   "git-github": gitLevels,
+  nodejs: nodejsLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {
