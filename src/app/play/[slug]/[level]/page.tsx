@@ -534,13 +534,22 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
                   : "bg-gray-900 border-white/10"
               }`}
             >
-              <div className="text-5xl mb-4">
-                {result.success ? "🏆" : "💡"}
-              </div>
-              <h2 className="text-2xl font-bold mb-2">
-                {result.success ? "Level Complete!" : "Keep Going!"}
-              </h2>
-              <p className="text-white/60 text-sm mb-4 leading-relaxed">{result.reason}</p>
+              {result.success && !nextLevelDef ? (
+                <>
+                  <div className="text-5xl mb-4">🎓</div>
+                  <h2 className="text-2xl font-bold mb-1">Course Complete!</h2>
+                  <p className="text-white/50 text-xs mb-3">You've finished every level</p>
+                  <p className="text-white/60 text-sm mb-4 leading-relaxed">{result.reason}</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-5xl mb-4">{result.success ? "🏆" : "💡"}</div>
+                  <h2 className="text-2xl font-bold mb-2">
+                    {result.success ? "Level Complete!" : "Keep Going!"}
+                  </h2>
+                  <p className="text-white/60 text-sm mb-4 leading-relaxed">{result.reason}</p>
+                </>
+              )}
 
               {result.success && (
                 <div className="flex items-center justify-center gap-1.5 text-yellow-400 font-semibold mb-6">
@@ -558,12 +567,20 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
                     Next Level <ChevronRight size={16} />
                   </button>
                 ) : result.success ? (
-                  <button
-                    onClick={() => router.push(`/courses/${slug}`)}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
-                  >
-                    <Trophy size={16} /> Course Complete!
-                  </button>
+                  <>
+                    <button
+                      onClick={() => router.push(`/dashboard`)}
+                      className="w-full py-3 bg-yellow-600 hover:bg-yellow-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+                    >
+                      <Trophy size={16} /> View Certificate
+                    </button>
+                    <button
+                      onClick={() => router.push(`/courses`)}
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2"
+                    >
+                      Browse More Courses
+                    </button>
+                  </>
                 ) : null}
                 <button
                   onClick={() => { setResult(null); resetLevel(levelDef); }}
