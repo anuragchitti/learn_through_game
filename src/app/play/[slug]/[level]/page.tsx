@@ -75,7 +75,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     setValidation({ status: "validating" });
 
     validateTimer.current = setTimeout(() => {
-      const { commands, error } = runUserCode(currentCode, cls);
+      const { commands, error } = runUserCode(currentCode, cls, slug);
 
       if (error) {
         setValidation({ status: "error", message: error });
@@ -123,9 +123,8 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
     editorRef.current = ed;
     monacoRef.current = monaco;
 
-    // For Python courses skip JS type setup entirely — Monaco's Python mode
-    // has no semantic validation so the editor will be squiggle-free.
-    if (slug === "python") return;
+    // Python and TypeScript have their own Monaco language modes — skip JS extraLib
+    if (slug === "python" || slug === "typescript") return;
 
     // Inject hero API type hints for autocomplete via the top-level typescript namespace
     // (monaco 0.55+ uses top-level "typescript" rather than "languages.typescript")
@@ -353,7 +352,7 @@ export default function PlayPage({ params }: { params: Promise<Params> }) {
           <div className="flex-1 min-h-0" style={{ minHeight: "280px" }}>
             <MonacoEditor
               height="100%"
-              language={slug === "python" ? "python" : "javascript"}
+              language={slug === "python" ? "python" : slug === "typescript" ? "typescript" : "javascript"}
               value={code}
               onChange={(v) => setCode(v ?? "")}
               onMount={handleEditorMount}
