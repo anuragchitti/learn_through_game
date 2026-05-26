@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { courses, courseCategories } from "@/data/courses";
 import { Search } from "lucide-react";
 
+const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql"]);
+
 function CoursesContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") ?? "all";
@@ -90,10 +92,15 @@ function CoursesContent() {
                 transition={{ delay: 0.04 * i }}
               >
                 <Link href={`/courses/${course.slug}`}>
-                  <div className="group h-full p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/25 hover:-translate-y-1 transition-all cursor-pointer">
+                  <div className={`group h-full p-6 rounded-2xl bg-white/5 border hover:-translate-y-1 transition-all cursor-pointer ${PLAYABLE_SLUGS.has(course.slug) ? "border-indigo-500/30 hover:border-indigo-400/60" : "border-white/10 hover:border-white/25"}`}>
                     <div className="flex items-start justify-between mb-4">
                       <span className="text-4xl">{course.icon}</span>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-1">
+                        {PLAYABLE_SLUGS.has(course.slug) && (
+                          <span className="text-xs text-indigo-300 bg-indigo-600/20 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">
+                            ▶ Playable
+                          </span>
+                        )}
                         <div className="text-xs text-white/40">{course.estimatedHours}h</div>
                         <div className="text-xs text-white/40">{course.totalModules} modules</div>
                       </div>
