@@ -4,11 +4,13 @@ import { motion } from "framer-motion";
 import { courses, courseCategories } from "@/data/courses";
 import { ArrowRight, Zap, Trophy, BookOpen, Star } from "lucide-react";
 
+const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql"]);
+
 const stats = [
   { label: "Courses", value: "25+" },
-  { label: "Learners", value: "10k+" },
-  { label: "Challenges", value: "500+" },
-  { label: "Certificates", value: "2k+" },
+  { label: "Challenges", value: "65+" },
+  { label: "Languages", value: "5" },
+  { label: "Certificates", value: "5" },
 ];
 
 const features = [
@@ -39,7 +41,9 @@ const features = [
 ];
 
 export default function HomePage() {
-  const featuredCourses = courses.slice(0, 6);
+  const playable = courses.filter((c) => PLAYABLE_SLUGS.has(c.slug));
+  const others = courses.filter((c) => !PLAYABLE_SLUGS.has(c.slug));
+  const featuredCourses = [...playable, ...others].slice(0, 6);
 
   return (
     <div className="min-h-screen">
@@ -204,7 +208,7 @@ export default function HomePage() {
           <div className="flex items-end justify-between mb-10">
             <div>
               <h2 className="text-3xl font-bold">Featured Courses</h2>
-              <p className="text-white/50 mt-1">25 courses across 6 categories</p>
+              <p className="text-white/50 mt-1">5 fully playable now · 20+ coming soon</p>
             </div>
             <Link
               href="/courses"
@@ -224,12 +228,19 @@ export default function HomePage() {
                 transition={{ delay: 0.08 * i }}
               >
                 <Link href={`/courses/${course.slug}`}>
-                  <div className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/25 transition-all hover:-translate-y-1 cursor-pointer h-full">
+                  <div className={`group p-6 rounded-2xl bg-white/5 border transition-all hover:-translate-y-1 cursor-pointer h-full ${PLAYABLE_SLUGS.has(course.slug) ? "border-indigo-500/30 hover:border-indigo-400/60" : "border-white/10 hover:border-white/25"}`}>
                     <div className="flex items-start justify-between mb-4">
                       <span className="text-4xl">{course.icon}</span>
-                      <span className="text-xs text-white/40 bg-white/5 px-2 py-1 rounded-full">
-                        {course.estimatedHours}h
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {PLAYABLE_SLUGS.has(course.slug) && (
+                          <span className="text-xs text-indigo-300 bg-indigo-600/20 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">
+                            ▶ Playable
+                          </span>
+                        )}
+                        <span className="text-xs text-white/40 bg-white/5 px-2 py-1 rounded-full">
+                          {course.estimatedHours}h
+                        </span>
+                      </div>
                     </div>
                     <h3 className="font-semibold text-white mb-1 group-hover:text-indigo-300 transition-colors">
                       {course.title}
