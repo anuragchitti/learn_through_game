@@ -3,6 +3,7 @@ import { javascriptLevels } from "./javascript";
 import { pythonLevels } from "./python";
 import { typescriptLevels } from "./typescript";
 import { reactLevels } from "./react";
+import { sqlLevels } from "./sql";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -13,6 +14,7 @@ export const allLevels: Record<string, LevelDefinition[]> = {
   python: pythonLevels,
   typescript: typescriptLevels,
   react: reactLevels,
+  sql: sqlLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {
