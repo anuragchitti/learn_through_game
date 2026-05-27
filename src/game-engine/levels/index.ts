@@ -17,6 +17,11 @@ import { graphqlLevels } from "./graphql";
 import { kubernetesLevels } from "./kubernetes";
 import { awsLevels } from "./aws";
 import { cicdLevels } from "./cicd";
+import { systemDesignLevels } from "./system-design";
+import { networkingLevels } from "./networking";
+import { djangoFastapiLevels } from "./django-fastapi";
+import { machineLearningLevels } from "./machine-learning";
+import { pythonDataLevels } from "./python-data";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -41,6 +46,11 @@ export const allLevels: Record<string, LevelDefinition[]> = {
   kubernetes: kubernetesLevels,
   aws: awsLevels,
   cicd: cicdLevels,
+  "system-design": systemDesignLevels,
+  networking: networkingLevels,
+  "django-fastapi": djangoFastapiLevels,
+  "machine-learning": machineLearningLevels,
+  "python-data": pythonDataLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {
