@@ -14,6 +14,7 @@ import { mongodbLevels } from "./mongodb";
 import { dockerLevels } from "./docker";
 import { redisLevels } from "./redis";
 import { graphqlLevels } from "./graphql";
+import { kubernetesLevels } from "./kubernetes";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -35,6 +36,7 @@ export const allLevels: Record<string, LevelDefinition[]> = {
   docker: dockerLevels,
   redis: redisLevels,
   graphql: graphqlLevels,
+  kubernetes: kubernetesLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {

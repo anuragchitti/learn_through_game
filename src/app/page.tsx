@@ -4,13 +4,13 @@ import { motion } from "framer-motion";
 import { courses, courseCategories } from "@/data/courses";
 import { ArrowRight, Zap, Trophy, BookOpen, Star } from "lucide-react";
 
-const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql", "html-css", "git-github", "nodejs", "linux", "dsa", "nextjs", "mongodb", "docker", "redis", "graphql"]);
+const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql", "html-css", "git-github", "nodejs", "linux", "dsa", "nextjs", "mongodb", "docker", "redis", "graphql", "kubernetes"]);
 
 const stats = [
   { label: "Courses", value: "25+" },
-  { label: "Challenges", value: "170+" },
-  { label: "Playable", value: "15" },
-  { label: "Certificates", value: "15" },
+  { label: "Challenges", value: "180+" },
+  { label: "Playable", value: "16" },
+  { label: "Certificates", value: "16" },
 ];
 
 const features = [
@@ -208,7 +208,7 @@ export default function HomePage() {
           <div className="flex items-end justify-between mb-10">
             <div>
               <h2 className="text-3xl font-bold">Featured Courses</h2>
-              <p className="text-white/50 mt-1">15 fully playable now · 10+ coming soon</p>
+              <p className="text-white/50 mt-1">16 fully playable now · 9+ coming soon</p>
             </div>
             <Link
               href="/courses"
