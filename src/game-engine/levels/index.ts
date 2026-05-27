@@ -10,6 +10,8 @@ import { nodejsLevels } from "./nodejs";
 import { linuxLevels } from "./linux";
 import { dsaLevels } from "./dsa";
 import { nextjsLevels } from "./nextjs";
+import { mongodbLevels } from "./mongodb";
+import { dockerLevels } from "./docker";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -27,6 +29,8 @@ export const allLevels: Record<string, LevelDefinition[]> = {
   linux: linuxLevels,
   dsa: dsaLevels,
   nextjs: nextjsLevels,
+  mongodb: mongodbLevels,
+  docker: dockerLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {
