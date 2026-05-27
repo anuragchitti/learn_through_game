@@ -417,7 +417,7 @@ hero.move("right");`,
 set -e  # exit on any error
 
 APP_DIR="/var/www/app"
-BRANCH="${1:-main}"
+BRANCH="\${1:-main}"
 
 echo "Deploying branch: $BRANCH"
 
