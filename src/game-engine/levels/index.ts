@@ -9,6 +9,7 @@ import { gitLevels } from "./git";
 import { nodejsLevels } from "./nodejs";
 import { linuxLevels } from "./linux";
 import { dsaLevels } from "./dsa";
+import { nextjsLevels } from "./nextjs";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -25,6 +26,7 @@ export const allLevels: Record<string, LevelDefinition[]> = {
   nodejs: nodejsLevels,
   linux: linuxLevels,
   dsa: dsaLevels,
+  nextjs: nextjsLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {

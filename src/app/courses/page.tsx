@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { courses, courseCategories } from "@/data/courses";
 import { Search } from "lucide-react";
 
-const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql", "html-css", "git-github", "nodejs", "linux", "dsa"]);
+const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql", "html-css", "git-github", "nodejs", "linux", "dsa", "nextjs"]);
 
 function CoursesContent() {
   const searchParams = useSearchParams();

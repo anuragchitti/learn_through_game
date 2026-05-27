@@ -4,13 +4,13 @@ import { motion } from "framer-motion";
 import { courses, courseCategories } from "@/data/courses";
 import { ArrowRight, Zap, Trophy, BookOpen, Star } from "lucide-react";
 
-const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql", "html-css", "git-github", "nodejs", "linux", "dsa"]);
+const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql", "html-css", "git-github", "nodejs", "linux", "dsa", "nextjs"]);
 
 const stats = [
   { label: "Courses", value: "25+" },
-  { label: "Challenges", value: "115+" },
-  { label: "Courses", value: "10" },
-  { label: "Certificates", value: "10" },
+  { label: "Challenges", value: "125+" },
+  { label: "Courses", value: "11" },
+  { label: "Certificates", value: "11" },
 ];
 
 const features = [
