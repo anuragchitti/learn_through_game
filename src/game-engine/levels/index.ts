@@ -13,6 +13,7 @@ import { nextjsLevels } from "./nextjs";
 import { mongodbLevels } from "./mongodb";
 import { dockerLevels } from "./docker";
 import { redisLevels } from "./redis";
+import { graphqlLevels } from "./graphql";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -33,6 +34,7 @@ export const allLevels: Record<string, LevelDefinition[]> = {
   mongodb: mongodbLevels,
   docker: dockerLevels,
   redis: redisLevels,
+  graphql: graphqlLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {
