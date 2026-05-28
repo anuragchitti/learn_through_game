@@ -22,6 +22,8 @@ import { networkingLevels } from "./networking";
 import { djangoFastapiLevels } from "./django-fastapi";
 import { machineLearningLevels } from "./machine-learning";
 import { pythonDataLevels } from "./python-data";
+import { restApiLevels } from "./rest-api";
+import { promptEngineeringLevels } from "./prompt-engineering";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -51,6 +53,8 @@ export const allLevels: Record<string, LevelDefinition[]> = {
   "django-fastapi": djangoFastapiLevels,
   "machine-learning": machineLearningLevels,
   "python-data": pythonDataLevels,
+  "rest-api": restApiLevels,
+  "prompt-engineering": promptEngineeringLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {

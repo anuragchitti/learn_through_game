@@ -4,13 +4,13 @@ import { motion } from "framer-motion";
 import { courses, courseCategories } from "@/data/courses";
 import { ArrowRight, Zap, Trophy, BookOpen, Star } from "lucide-react";
 
-const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql", "html-css", "git-github", "nodejs", "linux", "dsa", "nextjs", "mongodb", "docker", "redis", "graphql", "kubernetes", "aws", "cicd", "system-design", "networking", "django-fastapi", "machine-learning", "python-data"]);
+const PLAYABLE_SLUGS = new Set(["javascript", "python", "typescript", "react", "sql", "html-css", "git-github", "nodejs", "linux", "dsa", "nextjs", "mongodb", "docker", "redis", "graphql", "kubernetes", "aws", "cicd", "system-design", "networking", "django-fastapi", "machine-learning", "python-data", "rest-api", "prompt-engineering"]);
 
 const stats = [
   { label: "Courses", value: "25+" },
-  { label: "Challenges", value: "230+" },
-  { label: "Playable", value: "23" },
-  { label: "Certificates", value: "23" },
+  { label: "Challenges", value: "250+" },
+  { label: "Playable", value: "25" },
+  { label: "Certificates", value: "25" },
 ];
 
 const features = [
@@ -208,7 +208,7 @@ export default function HomePage() {
           <div className="flex items-end justify-between mb-10">
             <div>
               <h2 className="text-3xl font-bold">Featured Courses</h2>
-              <p className="text-white/50 mt-1">23 fully playable now · 2+ coming soon</p>
+              <p className="text-white/50 mt-1">All 25 courses fully playable</p>
             </div>
             <Link
               href="/courses"
