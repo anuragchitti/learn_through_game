@@ -41,6 +41,9 @@ create table profiles (
   character_class text default 'warrior',
   total_xp integer default 0,
   levels_completed integer default 0,
+  current_streak integer default 0,
+  longest_streak integer default 0,
+  last_active_date date,
   created_at timestamptz default now()
 );
 
@@ -55,9 +58,19 @@ create table level_completions (
   unique(user_id, course_slug, level_number)
 );
 
+-- Certificates (issued when all levels of a course are completed)
+create table certificates (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  course_slug text not null,
+  issued_at timestamptz default now(),
+  unique(user_id, course_slug)
+);
+
 -- Enable Row Level Security
 alter table profiles enable row level security;
 alter table level_completions enable row level security;
+alter table certificates enable row level security;
 
 -- Policies
 create policy "Users can view all profiles"
@@ -71,6 +84,57 @@ create policy "Users can insert own completions"
 
 create policy "Users can view all completions"
   on level_completions for select using (true);
+
+create policy "Users can manage own certificates"
+  on certificates for all using (auth.uid() = user_id);
+
+create policy "Anyone can view certificates"
+  on certificates for select using (true);
+
+-- Function to delete a user's own data (used by Settings → Danger Zone)
+create or replace function delete_my_account()
+returns void language plpgsql security definer as $$
+begin
+  delete from certificates where user_id = auth.uid();
+  delete from level_completions where user_id = auth.uid();
+  delete from profiles where id = auth.uid();
+end; $$;
+```
+
+### Already have the old schema? Run this migration instead:
+
+```sql
+-- Add streak columns to existing profiles table
+alter table profiles
+  add column if not exists current_streak integer default 0,
+  add column if not exists longest_streak integer default 0,
+  add column if not exists last_active_date date;
+
+-- Create certificates table
+create table if not exists certificates (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  course_slug text not null,
+  issued_at timestamptz default now(),
+  unique(user_id, course_slug)
+);
+
+alter table certificates enable row level security;
+
+create policy "Users can manage own certificates"
+  on certificates for all using (auth.uid() = user_id);
+
+create policy "Anyone can view certificates"
+  on certificates for select using (true);
+
+-- Update delete_my_account to also delete certificates
+create or replace function delete_my_account()
+returns void language plpgsql security definer as $$
+begin
+  delete from certificates where user_id = auth.uid();
+  delete from level_completions where user_id = auth.uid();
+  delete from profiles where id = auth.uid();
+end; $$;
 ```
 
 ---

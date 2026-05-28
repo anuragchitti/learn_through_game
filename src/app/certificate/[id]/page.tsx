@@ -3,7 +3,7 @@ import { getCertificate } from "@/lib/db";
 import { getUserProfile } from "@/lib/db";
 import { getCourseBySlug } from "@/data/courses";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import CertificateActions from "@/components/certificate/CertificateActions";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -60,21 +60,7 @@ export default async function CertificatePage({ params }: Props) {
           <div className="font-mono text-xs text-white/20">{id}</div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 mt-6 justify-center">
-          <Link
-            href="/dashboard"
-            className="px-6 py-3 bg-white/10 border border-white/20 text-white font-medium rounded-xl hover:bg-white/15 transition-colors"
-          >
-            Back to Dashboard
-          </Link>
-          <button
-            onClick={undefined}
-            className="px-6 py-3 bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 font-medium rounded-xl hover:bg-yellow-500/30 transition-colors"
-          >
-            Share Certificate
-          </button>
-        </div>
+        <CertificateActions certId={id} />
       </div>
     </div>
   );

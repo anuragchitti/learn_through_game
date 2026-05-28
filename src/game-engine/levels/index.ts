@@ -1,6 +1,29 @@
 import { LevelDefinition } from "../types";
 import { javascriptLevels } from "./javascript";
 import { pythonLevels } from "./python";
+import { typescriptLevels } from "./typescript";
+import { reactLevels } from "./react";
+import { sqlLevels } from "./sql";
+import { htmlCssLevels } from "./html-css";
+import { gitLevels } from "./git";
+import { nodejsLevels } from "./nodejs";
+import { linuxLevels } from "./linux";
+import { dsaLevels } from "./dsa";
+import { nextjsLevels } from "./nextjs";
+import { mongodbLevels } from "./mongodb";
+import { dockerLevels } from "./docker";
+import { redisLevels } from "./redis";
+import { graphqlLevels } from "./graphql";
+import { kubernetesLevels } from "./kubernetes";
+import { awsLevels } from "./aws";
+import { cicdLevels } from "./cicd";
+import { systemDesignLevels } from "./system-design";
+import { networkingLevels } from "./networking";
+import { djangoFastapiLevels } from "./django-fastapi";
+import { machineLearningLevels } from "./machine-learning";
+import { pythonDataLevels } from "./python-data";
+import { restApiLevels } from "./rest-api";
+import { promptEngineeringLevels } from "./prompt-engineering";
 import { allClassLevels, warriorLevels, mageLevels, archerLevels } from "./class-levels";
 import { CharacterClass } from "../characters";
 
@@ -9,6 +32,29 @@ export { warriorLevels, mageLevels, archerLevels };
 export const allLevels: Record<string, LevelDefinition[]> = {
   javascript: javascriptLevels,
   python: pythonLevels,
+  typescript: typescriptLevels,
+  react: reactLevels,
+  sql: sqlLevels,
+  "html-css": htmlCssLevels,
+  "git-github": gitLevels,
+  nodejs: nodejsLevels,
+  linux: linuxLevels,
+  dsa: dsaLevels,
+  nextjs: nextjsLevels,
+  mongodb: mongodbLevels,
+  docker: dockerLevels,
+  redis: redisLevels,
+  graphql: graphqlLevels,
+  kubernetes: kubernetesLevels,
+  aws: awsLevels,
+  cicd: cicdLevels,
+  "system-design": systemDesignLevels,
+  networking: networkingLevels,
+  "django-fastapi": djangoFastapiLevels,
+  "machine-learning": machineLearningLevels,
+  "python-data": pythonDataLevels,
+  "rest-api": restApiLevels,
+  "prompt-engineering": promptEngineeringLevels,
 };
 
 export function getLevelsForCourse(courseSlug: string): LevelDefinition[] {
